@@ -1,6 +1,5 @@
 package io.github.ericlima1993.icompras.pedidos.model;
 
-import io.github.ericlima1993.icompras.pedidos.controller.dto.DadosPagamentoDTO;
 import io.github.ericlima1993.icompras.pedidos.model.enums.StatusPedido;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -47,6 +46,6 @@ public class Pedido {
     @Transient
     private DadosPagamento dadosPagamento;
 
-    @OneToMany(mappedBy = "codigoPedido")
+    @OneToMany(mappedBy = "pedido")
     private List<ItemPedido> itens;
 }
