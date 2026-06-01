@@ -2,6 +2,8 @@ package io.github.ericlima1993.icompras.pedidos.controller;
 
 import io.github.ericlima1993.icompras.pedidos.controller.dto.NovoPedidoDTO;
 import io.github.ericlima1993.icompras.pedidos.controller.mappers.PedidoMapper;
+import io.github.ericlima1993.icompras.pedidos.model.exception.ValidationException;
+import io.github.ericlima1993.icompras.pedidos.model.exception.response.ValidatorErrorResponse;
 import io.github.ericlima1993.icompras.pedidos.service.PedidoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +22,13 @@ public class PedidoController {
 
     @PostMapping
     public ResponseEntity<Object> criar(@RequestBody NovoPedidoDTO pedidoDTO) {
-        var pedido = pedidoMapper.map(pedidoDTO);
-        var novoPedido = pedidoService.criarPedido(pedido);
-        return ResponseEntity.ok(novoPedido.getCodigo());
+        try{
+            var pedido = pedidoMapper.map(pedidoDTO);
+            var novoPedido = pedidoService.criarPedido(pedido);
+            return ResponseEntity.ok(novoPedido.getCodigo());
+        }catch (ValidationException e){
+            var erro = new ValidatorErrorResponse("Erro validando pedido", e.getField(), e.getMessage());
+            return ResponseEntity.badRequest().body(erro);
+        }
     }
 }

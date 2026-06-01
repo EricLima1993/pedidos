@@ -1,9 +1,15 @@
 package io.github.ericlima1993.icompras.pedidos.validator;
 
+import feign.FeignException;
+import io.github.ericlima1993.icompras.pedidos.client.ClientesClient;
 import io.github.ericlima1993.icompras.pedidos.client.ProdutosClient;
+import io.github.ericlima1993.icompras.pedidos.client.representation.ClienteRepresentation;
 import io.github.ericlima1993.icompras.pedidos.client.representation.ProdutoRepresentation;
+import io.github.ericlima1993.icompras.pedidos.model.ItemPedido;
 import io.github.ericlima1993.icompras.pedidos.model.Pedido;
+import io.github.ericlima1993.icompras.pedidos.model.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +17,40 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Log4j2
 public class PedidoValidator {
 
     private final ProdutosClient produtosClient;
+    private final ClientesClient clientesClient;
 
     public void validar(Pedido pedido) {
-        List<Long> codigosProdutos = pedido.getItens().stream().map(i -> i.getCodigoProduto()).toList();
-        codigosProdutos.forEach(codigoProduto ->{
-            ResponseEntity<ProdutoRepresentation> response = produtosClient.obterDados(codigoProduto);
+        Long codigoCliente = pedido.getCodigoCliente();
+        validarCliente(codigoCliente);
+
+        pedido.getItens().forEach(this::validarItem);
+    }
+
+    private void validarCliente(Long codigoCliente) {
+        try {
+            var response = clientesClient.obterDados(codigoCliente);
+            ClienteRepresentation cliente = response.getBody();
+            log.info("Cliente de código {} encontrado: {}", cliente.codigo(), cliente.nome());
+        }catch (FeignException.NotFound e){
+            log.error("Cliente não encontrado");
+            var message = String.format("Cliente de código %d não encontrado", codigoCliente);
+            throw new ValidationException("codigoCliente", message);
+        }
+    }
+
+    private void validarItem(ItemPedido item){
+        try{
+            var response = produtosClient.obterDados(item.getCodigoProduto());
             ProdutoRepresentation produto = response.getBody();
-        });
+            log.info("Produto de código {} encontrado: {}", produto.codigo(), produto.nome());
+        } catch (FeignException.NotFound e){
+            log.error("Produto não encontrado");
+            var message = String.format("Produto de código %d não encontrado", item.getCodigoProduto());
+            throw new ValidationException("codigoProduto", message);
+        }
     }
 }
