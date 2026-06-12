@@ -14,6 +14,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unexpected-view-properties: false
 
 server:
   port: 8080
